@@ -6,13 +6,20 @@ import { MoveIcon, PencilIcon, PlusIcon, TrashIcon } from '../../components/icon
 import { Button, Chip, Field, Input, Loading, Select, Textarea } from '../../components/ui'
 import { invalidateProjectViews, keys, useNode, useProjectQueue, useQueryClient } from '../../hooks/queries'
 import { useAction } from '../../hooks/useAction'
-import { DECISION_LABEL } from '../../lib/format'
-import { childrenOf, flatten, pathTitles, subtreeIds, type TreeIndex } from '../../lib/tree'
+import { DECISION_LABEL, DECISION_TONE } from '../../lib/format'
+import { childrenOf, decisionsOf, flatten, pathTitles, subtreeIds, type TreeIndex } from '../../lib/tree'
 import { TaskList } from '../tasks/TaskList'
 
 type Mode = 'view' | 'edit' | 'add' | 'move'
 
-/** 노드 상세: 제목·설명 수정, 하위 노드 추가, 옮기기, 삭제, 이 가지의 할 일. */
+interface NodeSheetActions {
+  onOpenTask: (taskId: number, context: Task[]) => void
+  onAddTask: (nodeId: number) => void
+  onOpenDecision: (decisionId: number) => void
+  onAddDecision: (nodeId: number) => void
+}
+
+/** 노드(기능) 상세: 이 기능의 결정, 제목·설명 수정, 하위 노드 추가, 옮기기, 삭제, 이 가지의 할 일. */
 export function NodeSheet({
   projectId,
   nodeId,
@@ -20,14 +27,14 @@ export function NodeSheet({
   onClose,
   onOpenTask,
   onAddTask,
+  onOpenDecision,
+  onAddDecision,
 }: {
   projectId: number
   nodeId: number | null
   index: TreeIndex
   onClose: () => void
-  onOpenTask: (taskId: number, context: Task[]) => void
-  onAddTask: (nodeId: number) => void
-}) {
+} & NodeSheetActions) {
   const node = nodeId !== null ? index.byId.get(nodeId) : undefined
   return (
     <Sheet open={nodeId !== null} onClose={onClose} title={node?.title ?? '노드'}>
@@ -40,6 +47,8 @@ export function NodeSheet({
           onClose={onClose}
           onOpenTask={onOpenTask}
           onAddTask={onAddTask}
+          onOpenDecision={onOpenDecision}
+          onAddDecision={onAddDecision}
         />
       ) : null}
     </Sheet>
@@ -53,14 +62,14 @@ function NodeDetailBody({
   onClose,
   onOpenTask,
   onAddTask,
+  onOpenDecision,
+  onAddDecision,
 }: {
   projectId: number
   nodeId: number
   index: TreeIndex
   onClose: () => void
-  onOpenTask: (taskId: number, context: Task[]) => void
-  onAddTask: (nodeId: number) => void
-}) {
+} & NodeSheetActions) {
   const qc = useQueryClient()
   const treeNode = index.byId.get(nodeId)!
   const isRoot = treeNode.parentId === null
@@ -89,7 +98,7 @@ function NodeDetailBody({
   const path = pathTitles(index, nodeId)
   const childCount = childrenOf(index, nodeId).length
   const descendantCount = subtreeIds(index, nodeId).size - 1
-  const decisions = Object.entries(treeNode.decisionCounts)
+  const decisions = decisionsOf(index, nodeId)
 
   return (
     <div className="flex flex-col gap-5">
@@ -104,15 +113,31 @@ function NodeDetailBody({
       ) : (
         <>
           {detail.description ? <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{detail.description}</p> : null}
-          {decisions.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {decisions.map(([status, count]) => (
-                <Chip key={status}>
-                  결정 {DECISION_LABEL[status as keyof typeof DECISION_LABEL]} {count}
-                </Chip>
-              ))}
-            </div>
-          ) : null}
+          <section>
+            <h4 className="mb-2 text-[13px] font-medium text-muted">이 기능의 결정 {decisions.length || ''}</h4>
+            {decisions.length > 0 ? (
+              <ul className="mb-2 flex flex-col gap-1.5">
+                {decisions.map((d) => (
+                  <li key={d.id}>
+                    <button
+                      onClick={() => onOpenDecision(d.id)}
+                      className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-line px-3 text-left hover:border-accent/40"
+                    >
+                      <Chip tone={DECISION_TONE[d.status]}>{DECISION_LABEL[d.status]}</Chip>
+                      <span className={`min-w-0 flex-1 truncate text-[15px] ${d.status === 'SUPERSEDED' ? 'text-muted line-through' : ''}`}>
+                        {d.title}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mb-2 text-sm text-muted">하기로 한 것, 안 하기로 한 것과 그 이유를 남겨 보세요.</p>
+            )}
+            <Button variant="primary" className="w-full" onClick={() => onAddDecision(nodeId)}>
+              <PlusIcon size={18} /> 결정 기록
+            </Button>
+          </section>
           <div className="grid grid-cols-2 gap-2">
             <Button onClick={() => setMode('add')}>
               <PlusIcon size={18} /> 하위 노드

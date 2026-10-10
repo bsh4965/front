@@ -4,8 +4,11 @@ import * as API from '../api/endpoints'
 import type { Task } from '../api/types'
 import { PageBody, PageHeader } from '../components/AppShell'
 import { ConfirmSheet, Sheet } from '../components/Sheet'
-import { ArchiveIcon, ChevronLeftIcon, ListTreeIcon, MindMapIcon, MoreIcon, PencilIcon, PlusIcon, QueueIcon, TrashIcon } from '../components/icons'
+import { ArchiveIcon, CheckIcon, ChevronLeftIcon, ListTreeIcon, MindMapIcon, MoreIcon, PencilIcon, PlusIcon, QueueIcon, TrashIcon } from '../components/icons'
 import { Button, Chip, EmptyState, ErrorState, IconButton, Loading, Segmented, Select } from '../components/ui'
+import { DecisionList } from '../features/decisions/DecisionList'
+import { DecisionRecordSheet } from '../features/decisions/DecisionRecordSheet'
+import { DecisionSheet } from '../features/decisions/DecisionSheet'
 import { ProjectFormSheet } from '../features/projects/ProjectFormSheet'
 import { CreateTaskSheet } from '../features/tasks/CreateTaskSheet'
 import { TaskList } from '../features/tasks/TaskList'
@@ -18,7 +21,7 @@ import { useAction } from '../hooks/useAction'
 import { flatten, indexTree, type TreeIndex } from '../lib/tree'
 import { useCurrentTeam } from '../state/team'
 
-type View = 'tree' | 'map' | 'tasks'
+type View = 'tree' | 'map' | 'decisions' | 'tasks'
 
 export function ProjectPage() {
   const projectId = Number(useParams().projectId)
@@ -26,13 +29,16 @@ export function ProjectPage() {
   const qc = useQueryClient()
   const { canManage } = useCurrentTeam()
   const { data: tree, isPending, error, refetch } = useTree(projectId)
-  const index = useMemo(() => (tree ? indexTree(tree.nodes) : null), [tree])
+  const index = useMemo(() => (tree ? indexTree(tree.nodes, tree.decisions) : null), [tree])
 
   const [view, setView] = useState<View>(() => (window.matchMedia('(min-width: 768px)').matches ? 'map' : 'tree'))
   const [selectedNode, setSelectedNode] = useState<number | null>(null)
   const [openTask, setOpenTask] = useState<{ id: number; context: Task[] } | null>(null)
   const [addTaskNode, setAddTaskNode] = useState<number | undefined>(undefined)
   const [creatingTask, setCreatingTask] = useState(false)
+  const [openDecision, setOpenDecision] = useState<number | null>(null)
+  const [recordNode, setRecordNode] = useState<number | undefined>(undefined)
+  const [recording, setRecording] = useState(false)
   const [menu, setMenu] = useState(false)
   const [editing, setEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -89,6 +95,15 @@ export function ProjectPage() {
     setAddTaskNode(nodeId)
     setCreatingTask(true)
   }
+  const startRecord = (nodeId?: number) => {
+    setSelectedNode(null)
+    setRecordNode(nodeId)
+    setRecording(true)
+  }
+  const showDecision = (decisionId: number) => {
+    setSelectedNode(null)
+    setOpenDecision(decisionId)
+  }
 
   return (
     <>
@@ -101,7 +116,7 @@ export function ProjectPage() {
             {archived ? <Chip>보관됨</Chip> : null}
           </span>
         }
-        subtitle={`노드 ${tree.nodes.length}개 · 열린 할 일 ${openTaskTotal}개`}
+        subtitle={`기능 ${tree.nodes.length - 1}개 · 결정 ${tree.decisions.length}개 · 열린 할 일 ${openTaskTotal}개`}
         actions={
           <IconButton label="프로젝트 메뉴" onClick={() => setMenu(true)}>
             <MoreIcon />
@@ -117,24 +132,34 @@ export function ProjectPage() {
               onChange={setView}
               options={[
                 { value: 'tree', label: <span className="inline-flex items-center gap-1.5"><ListTreeIcon size={16} />트리</span> },
-                { value: 'map', label: <span className="inline-flex items-center gap-1.5"><MindMapIcon size={16} />마인드맵</span> },
+                { value: 'map', label: <span className="inline-flex items-center gap-1.5"><MindMapIcon size={16} /><span className="hidden sm:inline">마인드</span>맵</span> },
+                { value: 'decisions', label: <span className="inline-flex items-center gap-1.5"><CheckIcon size={16} />결정</span> },
                 { value: 'tasks', label: <span className="inline-flex items-center gap-1.5"><QueueIcon size={16} />할 일</span> },
               ]}
             />
           </div>
-          <Button variant="primary" onClick={() => startAddTask()} aria-label="할 일 추가">
-            <PlusIcon size={18} />
-            <span className="hidden sm:inline">할 일</span>
-          </Button>
+          {view === 'tasks' ? (
+            <Button variant="primary" onClick={() => startAddTask()} aria-label="할 일 추가">
+              <PlusIcon size={18} />
+              <span className="hidden sm:inline">할 일</span>
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={() => startRecord()} aria-label="결정 기록">
+              <PlusIcon size={18} />
+              <span className="hidden sm:inline">결정 기록</span>
+            </Button>
+          )}
         </div>
 
         {view === 'tree' ? (
           <>
-            <TreeView index={index} onSelect={setSelectedNode} />
-            <p className="mt-3 text-center text-xs text-muted">노드를 누르면 하위 노드·할 일을 추가하거나 옮길 수 있어요.</p>
+            <TreeView index={index} onSelect={setSelectedNode} onSelectDecision={showDecision} />
+            <p className="mt-3 text-center text-xs text-muted">기능을 누르면 결정을 기록하거나 하위 기능·할 일을 추가할 수 있어요.</p>
           </>
         ) : view === 'map' ? (
-          <MindMap index={index} onSelect={setSelectedNode} />
+          <MindMap index={index} onSelect={setSelectedNode} onSelectDecision={showDecision} />
+        ) : view === 'decisions' ? (
+          <DecisionList projectId={projectId} onOpen={showDecision} onAdd={() => startRecord()} />
         ) : (
           <ProjectTasks projectId={projectId} index={index} onOpen={(id, context) => setOpenTask({ id, context })} onAdd={() => startAddTask()} />
         )}
@@ -147,6 +172,16 @@ export function ProjectPage() {
         onClose={() => setSelectedNode(null)}
         onOpenTask={(id, context) => setOpenTask({ id, context })}
         onAddTask={(nodeId) => startAddTask(nodeId)}
+        onOpenDecision={showDecision}
+        onAddDecision={(nodeId) => startRecord(nodeId)}
+      />
+      <DecisionSheet decisionId={openDecision} index={index} onClose={() => setOpenDecision(null)} onOpenDecision={setOpenDecision} />
+      <DecisionRecordSheet
+        open={recording}
+        onClose={() => setRecording(false)}
+        projectId={projectId}
+        index={index}
+        nodeId={recordNode}
       />
       <TaskSheet taskId={openTask?.id ?? null} context={openTask?.context} onClose={() => setOpenTask(null)} />
       <CreateTaskSheet open={creatingTask} onClose={() => setCreatingTask(false)} projectId={projectId} nodeId={addTaskNode} />

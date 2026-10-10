@@ -42,7 +42,8 @@ function CreateTaskForm({
 }) {
   const qc = useQueryClient()
   const { team } = useCurrentTeam()
-  const { data: projects } = useProjects(fixedProjectId ? undefined : team?.teamId, 'ACTIVE')
+  const { data: projectPage } = useProjects(fixedProjectId ? undefined : team?.teamId, 'ACTIVE')
+  const projects = projectPage?.content
   const { data: teamData } = useTeam(team?.teamId)
 
   const [projectId, setProjectId] = useState<number | undefined>(fixedProjectId)

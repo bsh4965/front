@@ -1,15 +1,23 @@
-import type { TreeNode } from '../api/types'
+import type { TreeDecision, TreeNode } from '../api/types'
 
 /** 서버가 준 평탄한 노드 배열(부모가 자식보다 먼저, 형제는 순서대로)을 트리로 쓰기 좋게 묶는다. */
 export interface TreeIndex {
   root: TreeNode | undefined
   byId: Map<number, TreeNode>
   children: Map<number, TreeNode[]>
+  /** 노드 id → 그 노드에 직접 달린 결정(만든 순). */
+  decisions: Map<number, TreeDecision[]>
 }
 
-export function indexTree(nodes: TreeNode[]): TreeIndex {
+export function indexTree(nodes: TreeNode[], decisionList: TreeDecision[] = []): TreeIndex {
   const byId = new Map<number, TreeNode>()
   const children = new Map<number, TreeNode[]>()
+  const decisions = new Map<number, TreeDecision[]>()
+  for (const d of decisionList) {
+    const list = decisions.get(d.nodeId) ?? []
+    list.push(d)
+    decisions.set(d.nodeId, list)
+  }
   let root: TreeNode | undefined
   for (const node of nodes) {
     byId.set(node.id, node)
@@ -21,7 +29,7 @@ export function indexTree(nodes: TreeNode[]): TreeIndex {
       children.set(node.parentId, list)
     }
   }
-  return { root, byId, children }
+  return { root, byId, children, decisions }
 }
 
 export function childrenOf(index: TreeIndex, id: number): TreeNode[] {
@@ -76,6 +84,17 @@ export function subtreeOpenTasks(index: TreeIndex, id: number): number {
 export function subtreeOverdueTasks(index: TreeIndex, id: number): number {
   let sum = 0
   for (const nodeId of subtreeIds(index, id)) sum += index.byId.get(nodeId)?.overdueTaskCount ?? 0
+  return sum
+}
+
+export function decisionsOf(index: TreeIndex, nodeId: number): TreeDecision[] {
+  return index.decisions.get(nodeId) ?? []
+}
+
+/** 이 노드와 아래 가지에 달린 결정 수. 접힌 노드에 보여 준다. */
+export function subtreeDecisionCount(index: TreeIndex, id: number): number {
+  let sum = 0
+  for (const nodeId of subtreeIds(index, id)) sum += decisionsOf(index, nodeId).length
   return sum
 }
 

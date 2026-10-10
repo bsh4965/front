@@ -88,9 +88,18 @@ export interface TreeNode {
   decisionCounts: Partial<Record<DecisionStatus, number>>
 }
 
+/** 마인드맵·트리에서 노드 끝에 붙는 결정(잎). */
+export interface TreeDecision {
+  id: number
+  nodeId: number
+  title: string
+  status: DecisionStatus
+}
+
 export interface Tree {
   project: Project
   nodes: TreeNode[]
+  decisions: TreeDecision[]
 }
 
 export interface NodeDetail {
@@ -132,6 +141,73 @@ export interface Activity {
   changes: Record<string, { from: unknown; to: unknown }>
   reason: string | null
   createdAt: string
+}
+
+export type Stance = 'SUPPORT' | 'OPPOSE' | 'NEUTRAL'
+
+export interface DecisionOption {
+  id: number
+  title: string
+  description: string | null
+  pros: string | null
+  cons: string | null
+  proposedBy: UserSummary
+  sortOrder: number
+  voteCount: number
+  selected: boolean
+  version: number
+  createdAt: string
+}
+
+export interface Decision {
+  id: number
+  projectId: number
+  nodeId: number
+  nodeTitle: string
+  title: string
+  context: string
+  status: DecisionStatus
+  finalized: boolean
+  votingOpen: boolean
+  options: DecisionOption[]
+  selectedOptionId: number | null
+  conclusion: string | null
+  rationale: string | null
+  decidedBy: UserSummary | null
+  decidedAt: string | null
+  supersedesId: number | null
+  supersededById: number | null
+  myVoteOptionId: number | null
+  voteCount: number
+  commentCount: number
+  taskCount: number
+  createdBy: UserSummary
+  version: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DecisionSummary {
+  id: number
+  nodeId: number
+  nodeTitle: string
+  title: string
+  status: DecisionStatus
+  conclusion: string | null
+  decidedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DecisionComment {
+  id: number
+  decisionId: number
+  optionId: number | null
+  author: UserSummary
+  stance: Stance
+  body: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Page<T> {

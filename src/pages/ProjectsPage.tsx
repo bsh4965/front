@@ -16,7 +16,8 @@ export function ProjectsPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [status, setStatus] = useState<ProjectStatus>('ACTIVE')
-  const { data: projects, isPending, error, refetch } = useProjects(team?.teamId, status)
+  const { data: page, isPending, error, refetch } = useProjects(team?.teamId, status)
+  const projects = page?.content
   const [creating, setCreating] = useState(false)
 
   const create = useAction((input: API.ProjectInput) => API.createProject(team!.teamId, input), {
@@ -55,7 +56,7 @@ export function ProjectsPage() {
           <Loading />
         ) : error ? (
           <ErrorState error={error} onRetry={() => void refetch()} />
-        ) : projects.length === 0 ? (
+        ) : !projects || projects.length === 0 ? (
           status === 'ACTIVE' ? (
             <EmptyState
               title="아직 프로젝트가 없어요"

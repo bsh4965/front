@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import * as API from '../api/endpoints'
-import type { ProjectStatus } from '../api/types'
+import type { DecisionStatus, ProjectStatus } from '../api/types'
 
 /** 쿼리 키는 여기에만 둔다. */
 export const keys = {
@@ -15,6 +15,11 @@ export const keys = {
     ['queue', 'project', projectId, nodeId, mine] as const,
   task: (taskId: number) => ['task', taskId] as const,
   activities: (taskId: number) => ['activities', taskId] as const,
+  decisions: (projectId: number, status: DecisionStatus | null) => ['decisions', projectId, status] as const,
+  decision: (decisionId: number) => ['decision', decisionId] as const,
+  decisionComments: (decisionId: number) => ['decision-comments', decisionId] as const,
+  decisionTasks: (decisionId: number) => ['decision-tasks', decisionId] as const,
+  decisionActivities: (decisionId: number) => ['decision-activities', decisionId] as const,
 }
 
 export const useMe = () => useQuery({ queryKey: keys.me, queryFn: API.getMe })
@@ -60,6 +65,32 @@ export const useActivities = (taskId: number | null) =>
     queryFn: () => API.taskActivities(taskId!),
     enabled: !!taskId,
   })
+
+export const useDecisions = (projectId: number, status: DecisionStatus | null) =>
+  useQuery({ queryKey: keys.decisions(projectId, status), queryFn: () => API.listDecisions(projectId, { status }) })
+
+export const useDecision = (decisionId: number | null) =>
+  useQuery({ queryKey: keys.decision(decisionId ?? 0), queryFn: () => API.getDecision(decisionId!), enabled: !!decisionId })
+
+export const useDecisionComments = (decisionId: number, enabled: boolean) =>
+  useQuery({ queryKey: keys.decisionComments(decisionId), queryFn: () => API.decisionComments(decisionId), enabled })
+
+export const useDecisionTasks = (decisionId: number, enabled: boolean) =>
+  useQuery({ queryKey: keys.decisionTasks(decisionId), queryFn: () => API.decisionTasks(decisionId), enabled })
+
+export const useDecisionActivities = (decisionId: number, enabled: boolean) =>
+  useQuery({ queryKey: keys.decisionActivities(decisionId), queryFn: () => API.decisionActivities(decisionId), enabled })
+
+/** 결정이 바뀌면 트리 잎·목록·상세·이력을 다시 읽는다. */
+export function invalidateDecisionViews(qc: QueryClient, decisionId?: number) {
+  void qc.invalidateQueries({ queryKey: ['tree'] })
+  void qc.invalidateQueries({ queryKey: ['decisions'] })
+  if (decisionId) {
+    void qc.invalidateQueries({ queryKey: keys.decision(decisionId) })
+    void qc.invalidateQueries({ queryKey: keys.decisionActivities(decisionId) })
+    void qc.invalidateQueries({ queryKey: keys.decisionComments(decisionId) })
+  }
+}
 
 /** 할 일이 바뀌면 큐·트리 배지·이력을 다시 읽는다. */
 export function invalidateTaskViews(qc: QueryClient, taskId?: number) {

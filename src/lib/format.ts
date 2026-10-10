@@ -24,13 +24,35 @@ export const ROLE_LABEL: Record<TeamRole, string> = {
   MEMBER: '멤버',
 }
 
+/** 메모처럼 읽히게 채택은 "한다", 기각은 "안 한다"로 보여 준다. */
 export const DECISION_LABEL: Record<DecisionStatus, string> = {
-  PROPOSED: '제안',
+  PROPOSED: '미정',
   DISCUSSING: '논의 중',
-  ADOPTED: '채택',
-  REJECTED: '기각',
+  ADOPTED: '한다',
+  REJECTED: '안 한다',
   DEFERRED: '보류',
-  SUPERSEDED: '대체됨',
+  SUPERSEDED: '바뀜',
+}
+
+export type DecisionTone = 'success' | 'danger' | 'warn' | 'accent' | 'neutral'
+
+export const DECISION_TONE: Record<DecisionStatus, DecisionTone> = {
+  PROPOSED: 'neutral',
+  DISCUSSING: 'accent',
+  ADOPTED: 'success',
+  REJECTED: 'danger',
+  DEFERRED: 'warn',
+  SUPERSEDED: 'neutral',
+}
+
+/** 마인드맵 잎 색(CSS 변수). */
+export const DECISION_COLOR: Record<DecisionStatus, string> = {
+  PROPOSED: 'var(--c-muted)',
+  DISCUSSING: 'var(--c-accent)',
+  ADOPTED: 'var(--c-success)',
+  REJECTED: 'var(--c-danger)',
+  DEFERRED: 'var(--c-warn)',
+  SUPERSEDED: 'var(--c-line)',
 }
 
 const DAY = 24 * 60 * 60 * 1000

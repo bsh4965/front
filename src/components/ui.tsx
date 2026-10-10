@@ -141,12 +141,13 @@ export function PriorityBadge({ priority, compact = false }: { priority: Priorit
   )
 }
 
-export function Chip({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'accent' | 'danger' | 'warn' }) {
+export function Chip({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'accent' | 'danger' | 'warn' | 'success' }) {
   const tones = {
     neutral: 'bg-surface-2 text-muted',
     accent: 'bg-accent-soft text-accent',
     danger: 'bg-danger-soft text-danger',
     warn: 'bg-warn/15 text-warn',
+    success: 'bg-success/15 text-success',
   }
   return <span className={`inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>
 }

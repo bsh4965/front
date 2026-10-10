@@ -1,0 +1,22 @@
+node_modules/
+dist/
+dev-dist/
+.vercel/
+*.tsbuildinfo
+*.local
+.env
+.env.*
+!.env.example
+
+# 로그
+*.log
+npm-debug.log*
+
+# OS / 에디터 / AI 도구
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+.omc/
+.claude/settings.local.json

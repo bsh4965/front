@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+/*
+ * 색은 토큰으로만 쓴다. 라이트/다크는 시스템 설정을 따른다.
+ * 우선순위 색: P0 빨강(긴급) · P1 주황(높음) · P2 파랑(보통) · P3 회색(낮음)
+ */
+:root {
+  --c-bg: #f6f5f1;
+  --c-surface: #ffffff;
+  --c-surface-2: #efeee8;
+  --c-fg: #1d1d1b;
+  --c-muted: #6b6a63;
+  --c-line: #e3e1d9;
+  --c-accent: #3b5bdb;
+  --c-accent-soft: #e7ecfc;
+  --c-on-accent: #ffffff;
+  --c-danger: #d6336c;
+  --c-danger-soft: #fdeaf0;
+  --c-success: #2b8a3e;
+  --c-warn: #e8590c;
+  --c-p0: #e03131;
+  --c-p1: #f08c00;
+  --c-p2: #3b5bdb;
+  --c-p3: #868e96;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #141413;
+    --c-surface: #1d1d1b;
+    --c-surface-2: #282826;
+    --c-fg: #ecebe6;
+    --c-muted: #9d9c95;
+    --c-line: #32322f;
+    --c-accent: #7d95ff;
+    --c-accent-soft: #232a45;
+    --c-on-accent: #0d1530;
+    --c-danger: #f06595;
+    --c-danger-soft: #3a1f29;
+    --c-success: #69db7c;
+    --c-warn: #ff922b;
+    --c-p0: #ff6b6b;
+    --c-p1: #ffa94d;
+    --c-p2: #7d95ff;
+    --c-p3: #adb5bd;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-line: var(--c-line);
+  --color-accent: var(--c-accent);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-on-accent: var(--c-on-accent);
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+  --color-success: var(--c-success);
+  --color-warn: var(--c-warn);
+  --color-p0: var(--c-p0);
+  --color-p1: var(--c-p1);
+  --color-p2: var(--c-p2);
+  --color-p3: var(--c-p3);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
+}
+
+/* iPhone 노치·홈 바 여백 */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+/* 좌우 기본 여백 16px. 가로로 눕힌 iPhone에서는 노치 여백이 더 크면 그만큼. */
+@utility px-safe {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+html,
+body,
+#root {
+  min-height: 100dvh;
+}
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  text-size-adjust: 100%;
+}
+
+/* iOS는 16px보다 작은 입력에 포커스하면 화면을 확대한다 */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
